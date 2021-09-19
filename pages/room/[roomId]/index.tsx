@@ -39,6 +39,8 @@ const RoomById: FC<Props> = (props) => {
 		{ name: "สมาชิก", value: "member" },
 	])
 
+	const [refresh, setRefresh] = useState<number>(0)
+
 	const { data } = useQuery(GET_ME_IN_ROOM, {
 		variables: {
 			roomId: props.query.roomId,
@@ -59,6 +61,7 @@ const RoomById: FC<Props> = (props) => {
 		if (!sub) return
 
 		const { state, item } = sub.onItemChange
+		setRefresh((prev) => prev + 1)
 		alertRef.current.open({
 			title: state,
 			body: `${item.member.nickname} / ${item.name}`,
@@ -69,7 +72,7 @@ const RoomById: FC<Props> = (props) => {
 	const RenderCart = () => {
 		switch (selectType) {
 			case "item":
-				return <Items roomId={props.query.roomId} />
+				return <Items roomId={props.query.roomId} refresh={refresh} />
 			case "member":
 				return <Member roomId={props.query.roomId} />
 			default:
@@ -135,11 +138,19 @@ const RoomById: FC<Props> = (props) => {
 	)
 }
 
-const Items: FC<{ roomId: string }> = ({ roomId }) => {
+const Items: FC<{ roomId: string; refresh: number }> = ({
+	roomId,
+	refresh,
+}) => {
 	const router = useRouter()
-	const { data, loading } = useQuery(GET_ROOM_ITEMS, {
+	const { data, loading, refetch } = useQuery(GET_ROOM_ITEMS, {
 		variables: { roomId },
 	})
+
+	useEffect(() => {
+		if (!refresh) return
+		refetch()
+	}, [refresh])
 
 	if (loading) return <Loading />
 
@@ -162,7 +173,11 @@ const Items: FC<{ roomId: string }> = ({ roomId }) => {
 							</div>
 						</div>
 						<div className="flex items-center space-x-3">
-							<img src={avatar(e.member?.user?.email || e.member?.id)} className="w-9" alt="" />
+							<img
+								src={avatar(e.member?.user?.email || e.member?.id)}
+								className="w-9"
+								alt=""
+							/>
 							<span>{e.member?.nickname}</span>
 						</div>
 					</div>
@@ -269,7 +284,7 @@ export const getServerSideProps = auth(async ({ query, res, req }: any) => {
 		return {
 			props: {
 				room: res.data.room,
-				query
+				query,
 			},
 		}
 	} catch (error) {

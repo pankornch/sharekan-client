@@ -106,6 +106,7 @@ const AddItem: FC<Props> = (props) => {
 	}
 
 	const canEdit = () => {
+		console.log(props.isOwner, queryRoom.room.me.id, item.member?.id)
 		if (props.isOwner || queryRoom.room.me.id === item.member?.id) return true
 		return false
 	}
@@ -129,7 +130,7 @@ const AddItem: FC<Props> = (props) => {
 							onChange={(e) =>
 								setItem((prev) => ({ ...prev, name: e.target.value }))
 							}
-							disabled={canEdit()}
+							disabled={!canEdit()}
 							value={item.name}
 						/>
 
@@ -144,7 +145,7 @@ const AddItem: FC<Props> = (props) => {
 										price: Number(e.target.value),
 									}))
 								}
-								disabled={canEdit()}
+								disabled={!canEdit()}
 								value={item.price}
 							/>
 

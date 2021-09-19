@@ -9,18 +9,20 @@ import User from "@/public/user.svg"
 import Section from "@/src/components/Section"
 import auth from "@/src/middlewares/auth"
 import client from "@/src/configs/apollo-client"
-import { IRoom } from "@/src/types"
+import { IMember, IRoom } from "@/src/types"
 import { getSession } from "next-auth/client"
 import { GET_ROOM_OVERVIEW, REMOVE_ROOM } from "@/src/gql"
 import { useRouter } from "next/dist/client/router"
-import { useMutation } from "@apollo/client"
+import { useMutation, useQuery } from "@apollo/client"
+import dateFormatter from "@/src/utils/dateFormatter"
+import Loading from "@/src/components/Loading"
+import { useRecoilValue } from "recoil"
+import { userState } from "@/src/store"
 
 interface Props {
 	query: {
 		roomId: string
 	}
-	room: IRoom
-	isOwner: boolean
 }
 
 const getInviteUri = (id: string) => {
@@ -40,7 +42,15 @@ const RoomOverview: FC<Props> = (props) => {
 		}
 	}
 
+	const user = useRecoilValue(userState)
 	const [removeRoom] = useMutation(REMOVE_ROOM)
+	const { data: room, loading } = useQuery(GET_ROOM_OVERVIEW, {
+		variables: { roomId: props.query.roomId },
+	})
+
+	const isOwner = () => {
+		return room.room.owner.id === user.id
+	}
 
 	const router = useRouter()
 
@@ -61,6 +71,8 @@ const RoomOverview: FC<Props> = (props) => {
 		}
 	}
 
+	if (loading) return <Loading />
+
 	return (
 		<div>
 			<DashboardNavbar backButton backTo={`/room/${props.query.roomId}`} />
@@ -70,7 +82,7 @@ const RoomOverview: FC<Props> = (props) => {
 					<input
 						type="text"
 						className="input w-full"
-						defaultValue={props.room.title}
+						defaultValue={room.room.title}
 						readOnly
 					/>
 				</Section>
@@ -79,14 +91,14 @@ const RoomOverview: FC<Props> = (props) => {
 					<input
 						type="text"
 						className="input w-full"
-						defaultValue={props.room.id}
+						defaultValue={room.room.id}
 						readOnly
 					/>
 				</Section>
 
 				<Section title="QR Code เชิญเข้าห้อง">
 					<div className="flex justify-center">
-						<QRCode value={getInviteUri(props.room.id!)} className="w-56" />
+						<QRCode value={getInviteUri(room.room.id!)} className="w-56" />
 					</div>
 				</Section>
 
@@ -95,11 +107,11 @@ const RoomOverview: FC<Props> = (props) => {
 						<input
 							type="text"
 							className="input flex-grow"
-							defaultValue={getInviteUri(props.room.id!)}
+							defaultValue={getInviteUri(room.room.id!)}
 							onFocus={(e) => e.target.select()}
 							readOnly
 						/>
-						<Copy content={getInviteUri(props.room.id!)} />
+						<Copy content={getInviteUri(room.room.id!)} />
 					</div>
 				</Section>
 
@@ -107,18 +119,18 @@ const RoomOverview: FC<Props> = (props) => {
 					<div className="text-main-grey">
 						<div className="flex justify-between">
 							<span>สินค้าทั้งหมด</span>
-							<span>{props.room.itemCounts}</span>
+							<span>{room.room.itemCounts}</span>
 						</div>
 						<div className="flex justify-between">
 							<span>ราคารวมทั้งหมด</span>
-							<span>{props.room.total}</span>
+							<span>{room.room.total}</span>
 						</div>
 					</div>
 				</Section>
 
-				<Section title={`สมาชิกห้อง (${props.room.members?.length})`}>
+				<Section title={`สมาชิกห้อง (${room.room.members?.length})`}>
 					<div className="space-y-3">
-						{props.room.members?.map((e, i) => (
+						{(room.room.members as IMember[]).map((e, i) => (
 							<div
 								onClick={() =>
 									router.push(`/room/${props.query.roomId}/member/${e.id}`)
@@ -146,10 +158,12 @@ const RoomOverview: FC<Props> = (props) => {
 				</Section>
 
 				<Section title="สร้างเมื่อ">
-					<div className="text-main-grey">28/09/2021 13:34:12</div>
+					<div className="text-main-grey">
+						{dateFormatter(room.room.createdAt!).dateTime}
+					</div>
 				</Section>
 
-				{props.isOwner && (
+				{isOwner() && (
 					<div onClick={onRemoveRoom} className="button bg-main-red text-white">
 						ลบห้อง
 					</div>
@@ -162,22 +176,17 @@ const RoomOverview: FC<Props> = (props) => {
 export const getServerSideProps = auth(async ({ req, query }: any) => {
 	const { roomId } = query
 
-	const session = await getSession({ req })
-
 	try {
-		const res = await client.query({
+		await client.query({
 			query: GET_ROOM_OVERVIEW,
 			variables: {
 				roomId,
 			},
 			context: { req },
 		})
-		const isOwner = res.data.room.owner.id === session?.user.id
 
 		return {
 			props: {
-				room: res.data.room,
-				isOwner,
 				query,
 			},
 		}

@@ -260,6 +260,7 @@ export const GET_ROOM_OVERVIEW = gql`
 					email
 				}
 			}
+			createdAt
 		}
 	}
 `
