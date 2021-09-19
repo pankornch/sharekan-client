@@ -58,7 +58,7 @@ const BillMember: FC<Props> = (props) => {
 										<span>{data.room.owner.promptpayName}</span>
 										<span>{data.room.owner.promptpayNumber}</span>
 									</div>
-									<Copy content={"dasdsa"} />
+									<Copy content={data.room.owner.promptpayNumber} />
 								</div>
 							</Section>
 						</div>

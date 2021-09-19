@@ -36,6 +36,17 @@ const Alert = forwardRef<any, Props>((props, ref) => {
 
 			setTimeout(() => {
 				close()
+				if (params?.title) {
+					setTitle("")
+				}
+
+				if (params?.body) {
+					setBody("")
+				}
+
+				if (params?.type) {
+					setType("")
+				}
 				resolve(null)
 			}, props.delay || 3000)
 		})
