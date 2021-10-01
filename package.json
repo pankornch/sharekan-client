@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.4.11",
+    "@netlify/plugin-nextjs": "^3.9.0",
     "@svgr/webpack": "^5.5.0",
     "graphql": "^15.5.3",
     "i": "^0.3.6",
