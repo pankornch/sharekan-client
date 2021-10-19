@@ -30,7 +30,7 @@ const Dashobard: FC = () => {
 
 	return (
 		<div className="ralative">
-			<DashboardNavbar />
+			<DashboardNavbar backButton backTo="/" />
 
 			<div className="container pt-24 pb-24">
 				<Select options={options} onSelect={onSelect} />

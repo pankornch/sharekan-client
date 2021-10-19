@@ -243,7 +243,8 @@ const AddItem: FC<Props> = (props) => {
 										<div className="flex space-x-3 items-center">
 											<img
 												src={avatar(
-													members.find((e) => e.id === option.value)?.nickname
+													members.find((e) => e.id === option.value)?.user
+														?.email
 												)}
 												className="w-8 h-8"
 											/>
