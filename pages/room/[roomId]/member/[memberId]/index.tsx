@@ -8,6 +8,7 @@ import auth from "@/src/middlewares/auth"
 import { IItem } from "@/src/types"
 import avatar from "@/src/utils/avatar"
 import { gql, useQuery } from "@apollo/client"
+import { useRouter } from "next/dist/client/router"
 import React, { FC } from "react"
 
 interface Props {
@@ -25,11 +26,20 @@ const ViewMember: FC<Props> = (props) => {
 		},
 	})
 
-	if (loading) return <Loading />
+	const router = useRouter()
 
 	const getInviteUri = () => {
-		return `${process.env.NEXT_PUBLIC_HOST}/join_room?id=${props.query.roomId}&memberId=${data.room.member.id}`
+		const { protocol, host } = location
+		const url = `${protocol}//${host}`
+
+		return `${url}/join_room?id=${props.query.roomId}&memberId=${data.room.member.id}`
 	}
+
+	const goToItem = (item: IItem) => {
+		router.push(`/room/${data.room.id}/item/${item.id}`)
+	}
+
+	if (loading) return <Loading />
 
 	return (
 		<div>
@@ -47,18 +57,22 @@ const ViewMember: FC<Props> = (props) => {
 							className="w-14 h-14"
 							alt=""
 						/>
-						<span className="text-2xl font-bold">
-							{data.room.member.nickname}
-						</span>
+						<div className="flex flex-col">
+							<span className="text-2xl font-bold">
+								{data.room.member.nickname}
+							</span>
+							<span className="text-sm text-main-grey">
+								{data.room.member.user.email}
+							</span>
+						</div>
 					</div>
-
-					<Copy content={getInviteUri()} />
+					{data.room.member.isAnonymous && <Copy content={getInviteUri()} />}
 				</div>
 
 				<div className="flex flex-col">
 					<Section title="สินค้า" className="space-y-3">
 						{(data.room.member.cart.items as IItem[]).map((e) => (
-							<div key={e.id} className="item-card">
+							<div onClick={() => goToItem(e)} key={e.id} className="item-card">
 								<div className="flex items-center justify-between">
 									<span>{e.name}</span>
 									<div className="flex items-center space-x-1">
@@ -84,7 +98,7 @@ const ViewMember: FC<Props> = (props) => {
 
 				<div className="flex justify-between">
 					<span>ราคารวมทั้งหมด</span>
-					<span className="text-lg font-bold">
+					<span className="text-lg font-bold text-main-orange">
 						{data.room.member.cart.total}
 					</span>
 				</div>

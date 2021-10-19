@@ -24,7 +24,8 @@
     "react-qr-svg": "^2.4.0",
     "recoil": "^0.4.1",
     "sass": "^1.39.2",
-    "subscriptions-transport-ws": "^0.9.19"
+    "subscriptions-transport-ws": "^0.9.19",
+    "sweetalert2": "^11.1.9"
   },
   "devDependencies": {
     "@types/react": "17.0.20",

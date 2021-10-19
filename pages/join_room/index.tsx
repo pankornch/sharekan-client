@@ -42,7 +42,6 @@ export const getServerSideProps = auth(async ({ query, req, res }: any) => {
 			props: {},
 		}
 	} catch (error) {
-		console.log(error)
 		return {
 			notFound: true,
 		}

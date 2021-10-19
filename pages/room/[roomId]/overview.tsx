@@ -9,25 +9,24 @@ import User from "@/public/user.svg"
 import Section from "@/src/components/Section"
 import auth from "@/src/middlewares/auth"
 import client from "@/src/configs/apollo-client"
-import { IMember, IRoom } from "@/src/types"
-import { getSession } from "next-auth/client"
+import { IMember } from "@/src/types"
 import { GET_ROOM_OVERVIEW, REMOVE_ROOM } from "@/src/gql"
 import { useRouter } from "next/dist/client/router"
-import { useMutation, useQuery } from "@apollo/client"
+import { gql, useMutation, useQuery } from "@apollo/client"
 import dateFormatter from "@/src/utils/dateFormatter"
 import Loading from "@/src/components/Loading"
-import { useRecoilValue } from "recoil"
-import { userState } from "@/src/store"
 
 interface Props {
 	query: {
 		roomId: string
 	}
+	isOwner: boolean
 }
 
 const getInviteUri = (id: string) => {
-	const host = process.env.NEXT_PUBLIC_HOST
-	return `${host}/join_room?id=${id}`
+	const { protocol, host } = location
+	const url = `${protocol}//${host}`
+	return `${url}/join_room?id=${id}`
 }
 
 const RoomOverview: FC<Props> = (props) => {
@@ -42,15 +41,10 @@ const RoomOverview: FC<Props> = (props) => {
 		}
 	}
 
-	const user = useRecoilValue(userState)
 	const [removeRoom] = useMutation(REMOVE_ROOM)
 	const { data: room, loading } = useQuery(GET_ROOM_OVERVIEW, {
 		variables: { roomId: props.query.roomId },
 	})
-
-	const isOwner = () => {
-		return room.room.owner.id === user.id
-	}
 
 	const router = useRouter()
 
@@ -66,9 +60,7 @@ const RoomOverview: FC<Props> = (props) => {
 				},
 			})
 			router.replace("/dashboard")
-		} catch (error) {
-			console.log(error)
-		}
+		} catch (error) {}
 	}
 
 	if (loading) return <Loading />
@@ -123,7 +115,9 @@ const RoomOverview: FC<Props> = (props) => {
 						</div>
 						<div className="flex justify-between">
 							<span>ราคารวมทั้งหมด</span>
-							<span>{room.room.total}</span>
+							<span className="font-bold text-main-orange text-lg">
+								{room.room.total}
+							</span>
 						</div>
 					</div>
 				</Section>
@@ -149,6 +143,9 @@ const RoomOverview: FC<Props> = (props) => {
 										<span className="text-main-grey text-sm">
 											{e.user?.email}
 										</span>
+										<span className="font-bold text-main-orange">
+											{e.cart?.total}
+										</span>
 									</div>
 								</div>
 								{renderRoleIcon(e.role!)}
@@ -163,7 +160,7 @@ const RoomOverview: FC<Props> = (props) => {
 					</div>
 				</Section>
 
-				{isOwner() && (
+				{props.isOwner && (
 					<div onClick={onRemoveRoom} className="button bg-main-red text-white">
 						ลบห้อง
 					</div>
@@ -177,17 +174,25 @@ export const getServerSideProps = auth(async ({ req, query }: any) => {
 	const { roomId } = query
 
 	try {
-		await client.query({
-			query: GET_ROOM_OVERVIEW,
+		const { data } = await client.query({
+			query: gql`
+				query ($roomId: ID!) {
+					room(id: $roomId) {
+						id
+						isOwner
+					}
+				}
+			`,
 			variables: {
 				roomId,
 			},
 			context: { req },
 		})
-
+		const { isOwner } = data.room
 		return {
 			props: {
 				query,
+				isOwner,
 			},
 		}
 	} catch (error) {

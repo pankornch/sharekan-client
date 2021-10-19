@@ -4,25 +4,29 @@ import auth from "@/src/middlewares/auth"
 import { useMutation } from "@apollo/client"
 import { useRouter } from "next/dist/client/router"
 import React, { FC, useState } from "react"
+import LoadingSVG from '@/public/loading.svg'
 
 const CreateRoom: FC = () => {
 	const router = useRouter()
 	const [title, setTitle] = useState<string>("")
 	const [createRoom] = useMutation(CREATE_ROOM)
+	const [loading, setLoading] = useState<boolean>(false)
 
 	const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
 
+		setLoading(true)
 		const res = await createRoom({ variables: { createRoomInput: { title } } })
 		const { id } = res.data.createRoom
 		router.push(`/room/${id}`)
+		setLoading(false)
 	}
 
 	return (
 		<div className="px-7">
 			<DashboardNavbar backButton />
 			<div className="flex flex-col items-center pt-24 space-y-14 container">
-				<img src="/create-room.svg"  className="w-full lg:w-1/3"/>
+				<img src="/create-room.svg" className="w-full lg:w-1/3" />
 
 				<form onSubmit={onSubmit} className="w-full">
 					<label htmlFor="input">สร้างห้อง</label>
@@ -34,7 +38,11 @@ const CreateRoom: FC = () => {
 					<button
 						type="submit"
 						className="button bg-main-blue text-white mt-12 w-full"
+						disabled={loading}
 					>
+						{loading && (
+							<LoadingSVG className="text-gray-500 w-5 h-5 mr-3 animate-spin" />
+						)}
 						สร้างห้อง
 					</button>
 				</form>

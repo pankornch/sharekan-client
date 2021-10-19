@@ -4,9 +4,9 @@ import ArrowLeft from "../../public/arrow-left.svg"
 import { useRouter } from "next/dist/client/router"
 import { useRecoilState } from "recoil"
 import { userState } from "../store"
-import { useSession } from "next-auth/client"
-import { IUser } from "../types"
 import LoadingSVG from "@/public/loading.svg"
+import { getSession } from "next-auth/client"
+import isEmpty from "../utils/isEmpty"
 
 interface Props {
 	backButton?: boolean
@@ -25,15 +25,13 @@ const DashboardNavbar: FC<Props> = (props) => {
 		router.replace(props.backTo!)
 	}
 
-	const [session] = useSession()
-
 	useEffect(() => {
-		if (!session) return
-
-		if (!Object.values(user).length) {
-			setUser(session!.user as IUser)
+		if (isEmpty(user)) {
+			getSession().then((session) => {
+				setUser(session!.user)
+			})
 		}
-	}, [session, user, setUser])
+	}, [user, setUser])
 
 	return (
 		<div className="flex justify-between items-center bg-main-blue fixed w-full top-0 right-0 z-50 px-7 text-white">
@@ -49,7 +47,7 @@ const DashboardNavbar: FC<Props> = (props) => {
 				onClick={() => router.push("/profile")}
 				className="rounded-circle py-3 cursor-pointer"
 			>
-				{!Object.keys(user).length ? (
+				{isEmpty(user) ? (
 					<LoadingSVG className="fill-current text-main-orange animate-spin w-5" />
 				) : (
 					<img src={avatar(user?.email)} className="w-12" alt="" />

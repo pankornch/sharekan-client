@@ -1,16 +1,24 @@
 import DashboardNavbar from "@/src/components/DashboardNavbar"
-import React, { FC, useEffect, useState } from "react"
+import React, { FC, useCallback, useContext, useEffect, useState } from "react"
 import Add from "@/public/add.svg"
 import Remove from "@/public/remove.svg"
-import Dropdown from "@/src/components/Dropdown"
 import client from "@/src/configs/apollo-client"
 import auth from "@/src/middlewares/auth"
 import { IItem, IMember } from "@/src/types"
 import { useRouter } from "next/dist/client/router"
-import { useQuery, gql } from "@apollo/client"
-import { getSession } from "next-auth/client"
-import { GET_ITEM_BY_ID, REMOVE_ITEM, UPDATE_ITEM } from "@/src/gql"
+import { useQuery, gql, useMutation } from "@apollo/client"
+import {
+	CREATE_ANONYMOUS_MEMBER,
+	GET_ITEM_BY_ID,
+	GET_ITEM_BY_ID_BY_OWNER,
+	REMOVE_ITEM,
+	UPDATE_ITEM,
+} from "@/src/gql"
 import Loading from "@/src/components/Loading"
+import Select from "@/src/components/Select"
+import avatar from "@/src/utils/avatar"
+import Swal from "sweetalert2"
+import Toast from "@/src/components/Toast"
 
 interface Props {
 	query: {
@@ -25,9 +33,15 @@ const AddItem: FC<Props> = (props) => {
 	const [members, setMembers] = useState<IMember[]>([])
 	const [loading, setLoading] = useState<boolean>(true)
 	const [currentMember, setCurrentMember] = useState<IMember>({})
-	const { data: queryRoom } = useQuery(GET_ITEM_BY_ID, {
-		variables: { roomId: props.query.roomId, itemId: props.query.itemId },
-	})
+	const [submitLoading, setSubmitLoading] = useState<boolean>(false)
+
+	const { data: queryRoom, refetch } = useQuery(
+		props.isOwner ? GET_ITEM_BY_ID_BY_OWNER : GET_ITEM_BY_ID,
+		{
+			variables: { roomId: props.query.roomId, itemId: props.query.itemId },
+		}
+	)
+	const [createAnonymousUser] = useMutation(CREATE_ANONYMOUS_MEMBER)
 
 	const router = useRouter()
 
@@ -53,7 +67,16 @@ const AddItem: FC<Props> = (props) => {
 	}
 
 	const onRemoveItem = async () => {
-		if (!confirm(`ต้องการลบสินค้า ${item.name} หรือไม่?`)) return
+		const result = await Swal.fire({
+			icon: "warning",
+			title: `ต้องการลบสินค้า ${item.name} หรือไม่?`,
+			showDenyButton: true,
+			confirmButtonText: "ตกลง",
+			denyButtonText: "ยกเลิก",
+			confirmButtonColor: "#123AAF",
+		})
+
+		if (!result.isConfirmed) return
 
 		await client.mutate({
 			mutation: REMOVE_ITEM,
@@ -70,8 +93,17 @@ const AddItem: FC<Props> = (props) => {
 
 	const onSubmit = async (e: React.FocusEvent<HTMLFormElement>) => {
 		e.preventDefault()
+		setSubmitLoading(true)
 
-		if (!confirm("ต้องการแก้ไขรายการ หรือไม่?")) return
+		const result = await Swal.fire({
+			title: "ต้องการแก้ไขรายการหรือไม่ ?",
+			showDenyButton: true,
+			confirmButtonText: "ตกลง",
+			denyButtonText: "ยกเลิก",
+			confirmButtonColor: "#123AAF",
+		})
+
+		if (!result.isConfirmed) return
 
 		try {
 			await client.mutate({
@@ -88,13 +120,18 @@ const AddItem: FC<Props> = (props) => {
 				},
 			})
 			router.back()
-		} catch (error: any) {}
+		} catch (error: any) {
+			setSubmitLoading(false)
+		}
 	}
 
-	const onSelectMember = async (option: { name: string; value: string }) => {
-		const member = members.find((e) => e.id === option.value)
-		setCurrentMember(member!)
-	}
+	const onSelectMember = useCallback(
+		async (option: any) => {
+			const member = members.find((e) => e.id === option.value)
+			setCurrentMember(member!)
+		},
+		[members]
+	)
 
 	const getTotal = () => {
 		const $total = (item: IItem) => (item.price || 0) * (item.quantity || 0)
@@ -106,16 +143,40 @@ const AddItem: FC<Props> = (props) => {
 	}
 
 	const canEdit = () => {
-		console.log(props.isOwner, queryRoom.room.me.id, item.member?.id)
-		if (props.isOwner || queryRoom.room.me.id === item.member?.id) return true
+		if (props.isOwner || queryRoom.room.me.id === item.member!.id) return true
 		return false
+	}
+
+	const onCreateAnonymous = async () => {
+		const { value: nickname } = await Swal.fire({
+			title: "เพิ่มสมาชิกไม่ระบุตัวตน",
+			input: "text",
+			inputPlaceholder: "ชื่อ",
+			showCancelButton: true,
+			confirmButtonColor: "#123AAF",
+		})
+
+		if (nickname === undefined) return
+
+		await createAnonymousUser({
+			variables: {
+				createAnonymousUserInput: {
+					roomId: props.query.roomId,
+					nickname: nickname || null,
+				},
+			},
+		})
+
+		Toast.open({ title: "เพิ่มสมาชิกไม่ระบุตัวตนสำเร็จ", type: "SUCCESS" })
+
+		refetch()
 	}
 
 	if (loading) return <Loading />
 
 	return (
 		<div className="relative">
-			<DashboardNavbar backButton backTo={`/room/${props.query.roomId}`} />
+			<DashboardNavbar backButton />
 
 			<div className="container pt-24 pb-12 h-screen">
 				<form
@@ -168,18 +229,34 @@ const AddItem: FC<Props> = (props) => {
 
 						{props.isOwner && (
 							<>
-								<Dropdown
+								<Select
 									label="สมาชิก"
 									options={members.map((e) => ({
 										value: e.id!,
-										name: `${e.nickname} (${e.user?.email})`,
+										label: `${e.nickname} ${
+											e.isAnonymous ? "(anonymous)" : ""
+										}`,
 									}))}
 									defaultValue={currentMember.id}
 									onSelect={onSelectMember}
+									renderOption={(option) => (
+										<div className="flex space-x-3 items-center">
+											<img
+												src={avatar(
+													members.find((e) => e.id === option.value)?.nickname
+												)}
+												className="w-8 h-8"
+											/>
+											<span>{option.label}</span>
+										</div>
+									)}
 								/>
 
 								<div className="flex justify-end">
-									<div className="button bg-main-orange text-white w-auto">
+									<div
+										onClick={onCreateAnonymous}
+										className="button bg-main-orange text-white w-auto"
+									>
 										เพิ่มสมาชิกไม่ระบุชื่อ
 									</div>
 								</div>
@@ -211,6 +288,7 @@ const AddItem: FC<Props> = (props) => {
 						{canEdit() && (
 							<div className="space-y-3">
 								<button
+									disabled={submitLoading}
 									type="submit"
 									className="button text-white bg-main-blue w-full"
 								>
@@ -233,18 +311,14 @@ const AddItem: FC<Props> = (props) => {
 }
 
 export const getServerSideProps = auth(async ({ req, query }: any) => {
-	const { roomId, itemId } = query
-
-	const session = await getSession({ req })
+	const { roomId } = query
 
 	try {
 		const { data } = await client.query({
 			query: gql`
 				query ($roomId: ID!) {
 					room(id: $roomId) {
-						owner {
-							id
-						}
+						isOwner
 					}
 				}
 			`,
@@ -252,7 +326,7 @@ export const getServerSideProps = auth(async ({ req, query }: any) => {
 			context: { req },
 		})
 
-		const isOwner = data.room.owner.id === session?.user.id
+		const { isOwner } = data.room
 		return {
 			props: { query, isOwner },
 		}

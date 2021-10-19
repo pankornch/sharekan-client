@@ -12,9 +12,10 @@ export const GET_ME = gql`
 `
 
 export const GET_ROOMS = gql`
-	query ($roomsType: GetRoomTypes!) {
+	query ($roomsType: GetRoomTypes!, $order: String) {
 		me {
-			rooms(type: $roomsType) {
+			id
+			rooms(type: $roomsType, order: $order) {
 				owner {
 					id
 					name
@@ -30,6 +31,7 @@ export const GET_ROOMS = gql`
 				id
 				title
 				total
+				isOwner
 				itemCounts
 				createdAt
 				updatedAt
@@ -65,11 +67,11 @@ export const GET_ROOM_BY_ID = gql`
 	}
 `
 
-
 export const GET_ROOM_ITEMS = gql`
-	query ($roomId: ID!) {
+	query ($roomId: ID!, $order: String) {
 		room(id: $roomId) {
-			items {
+			id
+			items(order: $order) {
 				id
 				name
 				price
@@ -78,6 +80,7 @@ export const GET_ROOM_ITEMS = gql`
 					id
 					nickname
 					user {
+						id
 						name
 						email
 					}
@@ -88,14 +91,16 @@ export const GET_ROOM_ITEMS = gql`
 `
 
 export const GET_ITEMS_BY_OWNER = gql`
-	query ($roomId: ID!) {
+	query ($roomId: ID!, $order: String) {
 		room(id: $roomId) {
+			id
 			me {
 				user {
+					id
 					email
 				}
 				nickname
-				items {
+				items(order: $order) {
 					id
 					name
 					price
@@ -107,12 +112,14 @@ export const GET_ITEMS_BY_OWNER = gql`
 `
 
 export const GET_ROOM_MEMBERS = gql`
-	query ($roomId: ID!) {
+	query ($roomId: ID!, $order: String) {
 		room(id: $roomId) {
-			members {
+			id
+			members(order: $order) {
 				id
 				nickname
 				user {
+					id
 					email
 				}
 				cart {
@@ -127,11 +134,14 @@ export const GET_ROOM_MEMBERS = gql`
 export const GET_MEMBER_BY_ID = gql`
 	query ($roomId: ID!, $memberId: ID!) {
 		room(id: $roomId) {
+			id
 			title
 			member(id: $memberId) {
 				id
+				isAnonymous
 				nickname
 				user {
+					id
 					email
 				}
 				cart {
@@ -149,8 +159,9 @@ export const GET_MEMBER_BY_ID = gql`
 	}
 `
 export const GET_MEMBER_BILL = gql`
-	query ($roomId: ID!) {
+	query ($roomId: ID!, $order: String) {
 		room(id: $roomId) {
+			id
 			owner {
 				email
 				name
@@ -160,13 +171,13 @@ export const GET_MEMBER_BILL = gql`
 
 			me {
 				id
+				items(order: $order) {
+					id
+					name
+					price
+					quantity
+				}
 				cart {
-					items {
-						id
-						name
-						price
-						quantity
-					}
 					total
 					itemCounts
 				}
@@ -175,10 +186,10 @@ export const GET_MEMBER_BILL = gql`
 	}
 `
 
-export const GET_ITEM_BY_MEMBER = gql`
+export const GET_MEMBER_ITEMS_BY_OWNER = gql`
 	query ($roomId: ID!) {
 		room(id: $roomId) {
-			title
+			id
 			me {
 				id
 				nickname
@@ -193,6 +204,7 @@ export const GET_ITEM_BY_MEMBER = gql`
 			members {
 				id
 				nickname
+				isAnonymous
 				user {
 					email
 				}
@@ -205,7 +217,26 @@ export const GET_ITEM_BY_MEMBER = gql`
 	}
 `
 
-export const GET_ITEM_BY_ID = gql`
+export const GET_ITEMS_BY_MEMBER = gql`
+	query ($roomId: ID!) {
+		room(id: $roomId) {
+			id
+			me {
+				id
+				nickname
+				cart {
+					itemCounts
+					items {
+						quantity
+					}
+					total
+				}
+			}
+		}
+	}
+`
+
+export const GET_ITEM_BY_ID_BY_OWNER = gql`
 	query ($roomId: ID!, $itemId: ID!) {
 		room(id: $roomId) {
 			me {
@@ -218,6 +249,34 @@ export const GET_ITEM_BY_ID = gql`
 					name
 					email
 				}
+			}
+			item(id: $itemId) {
+				id
+				name
+				price
+				quantity
+				member {
+					id
+					nickname
+					user {
+						name
+					}
+					cart {
+						itemCounts
+						total
+						total
+					}
+				}
+			}
+		}
+	}
+`
+
+export const GET_ITEM_BY_ID = gql`
+	query ($roomId: ID!, $itemId: ID!) {
+		room(id: $roomId) {
+			me {
+				id
 			}
 			item(id: $itemId) {
 				id
@@ -259,6 +318,9 @@ export const GET_ROOM_OVERVIEW = gql`
 					id
 					email
 				}
+				cart {
+					total
+				}
 			}
 			createdAt
 		}
@@ -268,6 +330,7 @@ export const GET_ROOM_OVERVIEW = gql`
 export const GET_ME_IN_ROOM = gql`
 	query ($roomId: ID!) {
 		room(id: $roomId) {
+			id
 			me {
 				id
 			}

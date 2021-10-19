@@ -1,8 +1,10 @@
-import { GetServerSideProps } from "next"
+import { GetServerSideProps, GetServerSidePropsContext } from "next"
 import { getSession } from "next-auth/client"
 
-const auth = (handler: any): GetServerSideProps => {
-	return async (context) => {
+const auth = (
+	handler: (context: GetServerSidePropsContext) => any
+): GetServerSideProps => {
+	return async (context: GetServerSidePropsContext) => {
 		const session = await getSession({ req: context.req })
 		if (!session?.token) {
 			context.res.writeHead(302, {
@@ -10,6 +12,9 @@ const auth = (handler: any): GetServerSideProps => {
 			})
 			context.res.end()
 		}
+
+		context.locale = JSON.stringify(session)
+
 		return handler(context)
 	}
 }

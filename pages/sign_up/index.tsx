@@ -1,9 +1,10 @@
-import React, { FormEventHandler, useRef, useState } from "react"
-import client from "../../src/configs/apollo-client"
+import React, { useState } from "react"
 import { gql, useMutation } from "@apollo/client"
 import Link from "next/link"
 import { useRouter } from "next/dist/client/router"
-import Alert from "@/src/components/Alert"
+import Loading from "@/public/loading.svg"
+import Toast from "@/src/components/Toast"
+import LogoSVG from "@/public/logo.svg"
 
 export default function SignUp() {
 	const router = useRouter()
@@ -14,7 +15,7 @@ export default function SignUp() {
 		name: "",
 	})
 
-	const alertRef = useRef<any>()
+	const [loading, setLoading] = useState<boolean>(false)
 
 	const [signUp] = useMutation(gql`
 		mutation ($signUpInput: SignUpInput!) {
@@ -27,20 +28,22 @@ export default function SignUp() {
 	const onSubmit = async (e: any) => {
 		e.preventDefault()
 		try {
+			setLoading(true)
 			await signUp({
 				variables: {
 					signUpInput: form,
 				},
 			})
-			alertRef.current.open({
+			Toast.open({
 				title: "สมัครสมาชิกสำเร็จ",
 				type: "SUCCESS",
 			})
 			router.push("/")
 		} catch (error: any) {
-			alertRef.current.open({
+			setLoading(false)
+			Toast.open({
 				title: "สมัครสมาชิกไม่สำเร็จ",
-				body: error.message,
+				content: error.message,
 				type: "ERROR",
 			})
 		}
@@ -49,7 +52,7 @@ export default function SignUp() {
 	return (
 		<div className="container py-5">
 			<div className="flex items-center space-x-3">
-				<img src="/logo.svg" alt="" className="w-9" />
+				<LogoSVG className="w-9" />
 				<h4 className="text-xl">Sharekan</h4>
 			</div>
 			<div className="flex flex-col space-y-5">
@@ -95,7 +98,14 @@ export default function SignUp() {
 						}
 					/>
 
-					<button className="button text-white bg-main-blue" type="submit">
+					<button
+						className="button text-white bg-main-blue"
+						type="submit"
+						disabled={loading}
+					>
+						{loading && (
+							<Loading className="text-gray-500 w-5 h-5 mr-3 animate-spin" />
+						)}
 						สมัครสมาชิก
 					</button>
 
@@ -104,7 +114,6 @@ export default function SignUp() {
 					</Link>
 				</form>
 			</div>
-			<Alert ref={alertRef} />
 		</div>
 	)
 }

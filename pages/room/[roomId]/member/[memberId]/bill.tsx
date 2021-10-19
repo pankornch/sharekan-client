@@ -11,6 +11,9 @@ import { GET_MEMBER_BILL } from "@/src/gql"
 import client from "@/src/configs/apollo-client"
 import Loading from "@/src/components/Loading"
 import { useRouter } from "next/dist/client/router"
+import CloseSVG from "@/public/close.svg"
+import avatar from "@/src/utils/avatar"
+
 interface Props {
 	query: {
 		roomId: string
@@ -23,6 +26,7 @@ const BillMember: FC<Props> = (props) => {
 	const { data, loading } = useQuery(GET_MEMBER_BILL, {
 		variables: {
 			roomId: props.query.roomId,
+			order: "DESC",
 		},
 	})
 
@@ -33,16 +37,23 @@ const BillMember: FC<Props> = (props) => {
 		})
 	}
 
+	const goToItem = (item: IItem) => {
+		router.push(`/room/${data.room.id}/item/${item.id}`)
+	}
+
 	if (loading) return <Loading />
 
 	return (
 		<div>
-			<DashboardNavbar backButton backTo={`/room/${props.query.roomId}`} />
+			<DashboardNavbar backButton />
 
 			<div className="container pt-24 pb-9 space-y-5">
 				<div>
 					<h3 className="text-2xl text-center text-bold">เจ้าของห้อง</h3>
-					<h3 className="text-xl text-center">{data.room.owner.name}</h3>
+					<div className="flex space-x-3 justify-center">
+						<img src={avatar(data!.room!.owner!.email!)} className="w-8" />
+						<h3 className="text-xl text-center">{data.room.owner.name}</h3>
+					</div>
 				</div>
 
 				{data.room.owner.promptpayNumber && data.room.owner.promptpayName ? (
@@ -69,19 +80,13 @@ const BillMember: FC<Props> = (props) => {
 
 				<div className="space-y-3">
 					<Section title="สินค้า" className="space-y-3">
-						{(data.room.me.cart.items as IItem[]).map((e) => (
-							<div
-								key={e.id}
-								className="item-card"
-								onClick={() =>
-									router.push(`/room/${props.query.roomId}/item/${e.id}`)
-								}
-							>
+						{(data.room.me.items as IItem[]).map((e) => (
+							<div key={e.id} className="item-card" onClick={() => goToItem(e)}>
 								<div className="flex justify-between">
 									<span>{e.name}</span>
 									<div className="flex items-center space-x-1">
 										<span>{e.price}</span>
-										<img src="/close.svg" alt="" className="w-3" />
+										<CloseSVG className="w-3" />
 										<span>{e.quantity}</span>
 									</div>
 								</div>
@@ -101,7 +106,9 @@ const BillMember: FC<Props> = (props) => {
 
 				<div className="flex justify-between">
 					<span>ราคารวมทั้งหมด</span>
-					<span className="text-2xl font-bold">{data.room.me.cart.total}</span>
+					<span className="text-2xl font-bold text-main-orange">
+						{data.room.me.cart.total}
+					</span>
 				</div>
 			</div>
 		</div>

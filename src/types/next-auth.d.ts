@@ -1,16 +1,12 @@
 import NextAuth from "next-auth"
+import { IUser } from "."
 
 declare module "next-auth" {
 	/**
 	 * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
 	 */
 	interface Session {
-		user: {
-			id: string
-			email: string
-			name: string
-			promptpayNumber?: string | null
-			promptpayName?: string | null
-		}
+		user: IUser
+		token: string
 	}
 }

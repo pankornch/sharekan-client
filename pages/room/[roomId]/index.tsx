@@ -1,9 +1,8 @@
 import DashboardNavbar from "@/src/components/DashboardNavbar"
-import Dropdown from "@/src/components/Dropdown"
 import avatar from "@/src/utils/avatar"
 import { useRouter } from "next/dist/client/router"
 import Link from "next/link"
-import React, { FC, useCallback, useEffect, useRef, useState } from "react"
+import React, { FC, useCallback, useEffect, useState } from "react"
 import Info from "@/public/info.svg"
 import Bill from "@/public/bill.svg"
 import { gql, useQuery, useSubscription } from "@apollo/client"
@@ -12,6 +11,7 @@ import client from "@/src/configs/apollo-client"
 import { IMember, IRoom } from "@/src/types"
 import Loading from "@/src/components/Loading"
 import ListView from "@/src/components/ListView"
+import BotSVG from "@/public/bot.svg"
 import {
 	GET_ITEMS_BY_OWNER,
 	GET_ME_IN_ROOM,
@@ -19,7 +19,8 @@ import {
 	GET_ROOM_MEMBERS,
 	SUBSCRIBE_ON_ITEM_CHNAGE,
 } from "@/src/gql"
-import Alert from "@/src/components/Alert"
+import Toast from "@/src/components/Toast"
+import Select from "@/src/components/Select"
 
 interface Props {
 	room: IRoom
@@ -33,11 +34,11 @@ const RoomById: FC<Props> = (props) => {
 
 	const [selectType, setSelectType] = useState<string>("")
 
-	const [options, setOptions] = useState<{ name: string; value: string }[]>([
-		{ name: "ของตนเอง", value: "own" },
-		{ name: "สินค้า", value: "item" },
-		{ name: "สมาชิก", value: "member" },
-	])
+	const options = [
+		{ label: "ของตนเอง", value: "own" },
+		{ label: "สินค้า", value: "item" },
+		{ label: "สมาชิก", value: "member" },
+	]
 
 	const [refresh, setRefresh] = useState<number>(0)
 
@@ -46,8 +47,6 @@ const RoomById: FC<Props> = (props) => {
 			roomId: props.query.roomId,
 		},
 	})
-
-	const alertRef = useRef<any>()
 
 	const { data: sub } = useSubscription(SUBSCRIBE_ON_ITEM_CHNAGE, {
 		variables: {
@@ -61,10 +60,12 @@ const RoomById: FC<Props> = (props) => {
 		if (!sub) return
 
 		const { state, item } = sub.onItemChange
+
 		setRefresh((prev) => prev + 1)
-		alertRef.current.open({
+
+		Toast.open({
 			title: state,
-			body: `${item.member.nickname} / ${item.name}`,
+			content: `${item.member.nickname} / ${item.name}`,
 			type: "SUCCESS",
 		})
 	}, [sub])
@@ -81,7 +82,7 @@ const RoomById: FC<Props> = (props) => {
 	}
 
 	const onChangeType = useCallback(
-		(option: { name: string; value: string }) => {
+		(option) => {
 			setSelectType(option.value)
 		},
 		[setSelectType]
@@ -96,12 +97,12 @@ const RoomById: FC<Props> = (props) => {
 			/>
 
 			<div className="py-24 container space-y-5">
-				<Dropdown
+				<Select
 					className="w-full"
 					label="แยกประเภท"
 					options={options}
 					onSelect={onChangeType}
-					defaultIndex={0}
+					defaultValue={selectType}
 				/>
 
 				<RenderCart />
@@ -132,8 +133,6 @@ const RoomById: FC<Props> = (props) => {
 					<a className="button w-full bg-main-blue text-white">เพิ่มสินค้า</a>
 				</Link>
 			</div>
-
-			<Alert ref={alertRef} />
 		</div>
 	)
 }
@@ -144,13 +143,13 @@ const Items: FC<{ roomId: string; refresh: number }> = ({
 }) => {
 	const router = useRouter()
 	const { data, loading, refetch } = useQuery(GET_ROOM_ITEMS, {
-		variables: { roomId },
+		variables: { roomId, order: "DESC" },
 	})
 
 	useEffect(() => {
 		if (!refresh) return
 		refetch()
-	}, [refresh])
+	}, [refresh, refetch])
 
 	if (loading) return <Loading />
 
@@ -173,12 +172,17 @@ const Items: FC<{ roomId: string; refresh: number }> = ({
 							</div>
 						</div>
 						<div className="flex items-center space-x-3">
-							<img
-								src={avatar(e.member?.user?.email || e.member?.id)}
-								className="w-9"
-								alt=""
-							/>
-							<span>{e.member?.nickname}</span>
+							{!e.member ? (
+								<BotSVG className="w-9" />
+							) : (
+								<img
+									src={avatar(e.member?.user?.email || e.member?.id)}
+									className="w-9"
+									alt=""
+								/>
+							)}
+
+							<span>{e.member?.nickname || "Anonymous"}</span>
 						</div>
 					</div>
 				)}
@@ -191,7 +195,7 @@ const ItemsOwner: FC<{ roomId: string }> = ({ roomId }) => {
 	const router = useRouter()
 
 	const { data, loading } = useQuery(GET_ITEMS_BY_OWNER, {
-		variables: { roomId },
+		variables: { roomId, order: "DESC" },
 	})
 
 	if (loading) return <Loading />

@@ -25,8 +25,8 @@ export const CREATE_ROOM = gql`
 `
 
 export const ADD_ITEM = gql`
-	mutation ($addItemInput: AddItemInput!) {
-		addItem(input: $addItemInput) {
+	mutation ($input: AddItemInput!) {
+		addItem(input: $input) {
 			id
 		}
 	}
@@ -63,7 +63,13 @@ export const CREATE_ANONYMOUS_MEMBER = gql`
 `
 
 export const REMOVE_ROOM = gql`
-	mutation ($removeRoomInput: RemoveRoomInput!) {
-		removeRoom(input: $removeRoomInput)
+	mutation ($input: RemoveRoomInput!) {
+		removeRoom(input: $input)
+	}
+`
+
+export const REMOVE_MEMBER = gql`
+	mutation ($input: RemoveMemberInput!) {
+		removeMember(input: $input)
 	}
 `

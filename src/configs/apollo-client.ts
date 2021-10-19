@@ -9,7 +9,6 @@ import { getSession } from "next-auth/client"
 import { WebSocketLink } from "@apollo/client/link/ws"
 import { getMainDefinition } from "@apollo/client/utilities"
 
-
 const wsLink = process.browser
 	? new WebSocketLink({
 			uri: process.env.NEXT_PUBLIC_GRAPHQL_WS!,

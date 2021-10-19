@@ -1,11 +1,11 @@
 import DashboardNavbar from "@/src/components/DashboardNavbar"
 import Section from "@/src/components/Section"
 import auth from "@/src/middlewares/auth"
-import React, { FC, useRef, useState } from "react"
+import React, { FC, useState } from "react"
 import { useMutation } from "@apollo/client"
 import { CHANGE_PASSWORD } from "@/src/gql"
-import Alert from "@/src/components/Alert"
 import { useRouter } from "next/dist/client/router"
+import Toast from "@/src/components/Toast"
 
 const ChangePassword: FC = () => {
 	const router = useRouter()
@@ -13,7 +13,6 @@ const ChangePassword: FC = () => {
 		currentPassword: "",
 		newPassword: "",
 	})
-	const alertRef = useRef<any>()
 
 	const [changePassword] = useMutation(CHANGE_PASSWORD)
 
@@ -24,17 +23,18 @@ const ChangePassword: FC = () => {
 					changePasswordInput: form,
 				},
 			})
-			
-			alertRef.current?.open({
+
+			Toast.open({
 				title: "เปลี่ยนรหัสผ่านสำเร็จ",
 				type: "SUCCESS",
 			})
 
 			router.back()
 		} catch (error) {
-			alertRef.current?.open({
+			Toast.open({
 				title: "เปลี่ยนรหัสผ่านไม่สำเร็จ",
-				body: "รหัสผ่านเดิมไม่ถูกต้อง",
+				content: "รหัสผ่านเดิมไม่ถูกต้อง",
+				type: "ERROR",
 			})
 		}
 	}
@@ -79,7 +79,6 @@ const ChangePassword: FC = () => {
 				>
 					บันทึก
 				</div>
-				<Alert ref={alertRef} />
 			</div>
 		</div>
 	)

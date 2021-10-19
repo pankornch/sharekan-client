@@ -50,3 +50,8 @@ export interface IItem {
 	createdAt?: Date
 	updatedAt?: Date
 }
+
+export interface ISession {
+	user?: IUser
+	token?: string
+}

@@ -1,21 +1,24 @@
 import DashboardNavbar from "@/src/components/DashboardNavbar"
-import React, { FC, useCallback, useEffect, useRef, useState } from "react"
+import React, { FC, useCallback, useEffect, useState } from "react"
 import Add from "@/public/add.svg"
 import Remove from "@/public/remove.svg"
-import Dropdown from "@/src/components/Dropdown"
 import { useRouter } from "next/dist/client/router"
 import { IItem, IMember } from "@/src/types"
 import { gql, useMutation, useQuery } from "@apollo/client"
 import auth from "@/src/middlewares/auth"
 import client from "@/src/configs/apollo-client"
-import { getSession } from "next-auth/client"
+import Swal from "sweetalert2"
 import {
 	ADD_ITEM,
 	CREATE_ANONYMOUS_MEMBER,
-	GET_ITEM_BY_MEMBER,
+	GET_ITEMS_BY_MEMBER,
+	GET_MEMBER_ITEMS_BY_OWNER,
+	REMOVE_MEMBER,
 } from "@/src/gql"
-import Alert from "@/src/components/Alert"
 import Loading from "@/src/components/Loading"
+import Toast from "@/src/components/Toast"
+import Select from "@/src/components/Select"
+import avatar from "@/src/utils/avatar"
 
 interface Props {
 	query: {
@@ -35,22 +38,34 @@ const AddItem: FC<Props> = (props) => {
 	const [members, setMembers] = useState<IMember[]>([])
 	const [loading, setLoading] = useState<boolean>(true)
 	const [createAnonymousUser] = useMutation(CREATE_ANONYMOUS_MEMBER)
-	const { data: room, refetch } = useQuery(GET_ITEM_BY_MEMBER, {
-		variables: { roomId: props.query.roomId },
-	})
+	const { data: room, refetch } = useQuery(
+		props.isOwner ? GET_MEMBER_ITEMS_BY_OWNER : GET_ITEMS_BY_MEMBER,
+		{
+			variables: { roomId: props.query.roomId },
+		}
+	)
 	const [addItem] = useMutation(ADD_ITEM)
+	const [removeMember] = useMutation(REMOVE_MEMBER)
 
-	const alertRef = useRef<any>()
+	useEffect(() => {
+		if (!room) return
+		if (props.isOwner) setMembers(room.room.members)
+		setCurrentMember(room.room.me)
+		setLoading(false)
+	}, [props.isOwner, room])
 
 	const getTotal = () => {
 		const total = (item.price || 0) * item.quantity!
 		return total + (currentMember.cart?.total || 0)
 	}
 
-	const onSelectMember = async (option: { name: string; value: string }) => {
-		const member = members.find((e) => e.id === option.value)
-		setCurrentMember(member!)
-	}
+	const onSelectMember = useCallback(
+		async (option) => {
+			const member = members.find((e) => e.id === option.value)
+			setCurrentMember(member!)
+		},
+		[members]
+	)
 
 	const increment = () => {
 		setItem((prev) => ({ ...prev, quantity: prev.quantity! + 1 }))
@@ -62,19 +77,12 @@ const AddItem: FC<Props> = (props) => {
 		setItem((prev) => ({ ...prev, quantity: prev.quantity! - 1 }))
 	}
 
-	useEffect(() => {
-		if (!room) return
-		setMembers(room.room.members)
-		setLoading(false)
-		setCurrentMember(room.room.me)
-	}, [room])
-
 	const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
 
 		await addItem({
 			variables: {
-				addItemInput: {
+				input: {
 					name: item.name,
 					price: item.price,
 					quantity: item.quantity,
@@ -84,30 +92,53 @@ const AddItem: FC<Props> = (props) => {
 			},
 		})
 
-		alertRef.current.open({
+		await Toast.open({
 			title: "เพิ่มรายการสำเร็จ",
 			type: "SUCCESS",
 		})
-
 		router.back()
 	}
 
 	const onCreateAnonymous = async () => {
+		const { value: nickname } = await Swal.fire({
+			title: "เพิ่มสมาชิกไม่ระบุตัวตน",
+			input: "text",
+			inputPlaceholder: "ชื่อ",
+			showCancelButton: true,
+			confirmButtonColor: "#123AAF",
+		})
+
+		if (nickname === undefined) return
+
 		await createAnonymousUser({
 			variables: {
 				createAnonymousUserInput: {
 					roomId: props.query.roomId,
+					nickname: nickname || null,
 				},
 			},
 		})
 
-		alertRef.current.open({
-			title: "เพิ่มสมาชิกไม่ระบุตัวตนสำเร็จ",
-			type: "SUCCESS",
-		})
+		Toast.open({ title: "เพิ่มสมาชิกไม่ระบุตัวตนสำเร็จ", type: "SUCCESS" })
 
 		refetch()
 	}
+
+	const onRemoveMember = useCallback(
+		async (option) => {
+			await removeMember({
+				variables: {
+					input: {
+						roomId: props.query.roomId,
+						memberId: option.value,
+					},
+				},
+			})
+
+			refetch()
+		},
+		[props.query.roomId, refetch, removeMember]
+	)
 
 	if (loading) return <Loading />
 
@@ -166,21 +197,36 @@ const AddItem: FC<Props> = (props) => {
 
 						{props.isOwner && (
 							<>
-								<Dropdown
+								<Select
 									label="สมาชิก"
 									options={members.map((e) => ({
 										value: e.id!,
-										name: `${e.nickname} (${e.user?.email || "anonymous"})`,
+										label: `${e.nickname} ${
+											e.isAnonymous ? "(anonymous)" : ""
+										}`,
 									}))}
 									defaultValue={currentMember.id}
 									onSelect={onSelectMember}
+									showRemove
+									renderOption={(option) => (
+										<div className="flex space-x-3 items-center">
+											<img
+												src={avatar(
+													members.find((e) => e.id === option.value)?.nickname
+												)}
+												className="w-8 h-8"
+											/>
+											<span>{option.label}</span>
+										</div>
+									)}
+									onRemove={(option) => onRemoveMember(option)}
 								/>
 
-								<div
-									onClick={onCreateAnonymous}
-									className="flex justify-end cursor-pointer"
-								>
-									<div className="button bg-main-orange text-white w-auto">
+								<div className="flex justify-end">
+									<div
+										onClick={onCreateAnonymous}
+										className="button bg-main-orange text-white w-auto cursor-pointer"
+									>
 										เพิ่มสมาชิกไม่ระบุชื่อ
 									</div>
 								</div>
@@ -230,24 +276,19 @@ const AddItem: FC<Props> = (props) => {
 					</div>
 				</form>
 			</div>
-			<Alert ref={alertRef} />
 		</div>
 	)
 }
 
-export const getServerSideProps = auth(async ({ req, res, query }: any) => {
+export const getServerSideProps = auth(async ({ req, query }) => {
 	const { roomId } = query
-
-	const session = await getSession({ req })
 
 	try {
 		const { data } = await client.query({
 			query: gql`
 				query ($roomId: ID!) {
 					room(id: $roomId) {
-						owner {
-							id
-						}
+						isOwner
 					}
 				}
 			`,
@@ -255,7 +296,7 @@ export const getServerSideProps = auth(async ({ req, res, query }: any) => {
 			context: { req },
 		})
 
-		const isOwner = data.room.owner.id === session?.user.id
+		const { isOwner } = data.room
 		return {
 			props: { query, isOwner },
 		}

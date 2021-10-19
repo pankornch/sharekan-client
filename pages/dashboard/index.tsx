@@ -1,7 +1,6 @@
 import DashboardNavbar from "@/src/components/DashboardNavbar"
-import Dropdown from "@/src/components/Dropdown"
 import Link from "next/link"
-import React, { FC, useCallback, useState } from "react"
+import React, { FC, useCallback } from "react"
 import auth from "@/src/middlewares/auth"
 import dateFormatter from "@/src/utils/dateFormatter"
 import { useRouter } from "next/dist/client/router"
@@ -9,36 +8,33 @@ import Loading from "@/src/components/Loading"
 import ListView from "@/src/components/ListView"
 import { useQuery } from "@apollo/client"
 import { GET_ROOMS } from "@/src/gql"
+import Select from "@/src/components/Select"
 
 const Dashobard: FC = () => {
-	const [select, setSelect] = useState<string>("ALL")
 	const { data, refetch, loading } = useQuery(GET_ROOMS, {
-		variables: { roomsType: select },
+		variables: { roomsType: "ALL", order: "DESC" },
 	})
+	const options = [
+		{ label: "ทั้งหมด", value: "ALL" },
+		{ label: "เจ้าของ", value: "OWNER" },
+		{ label: "สมาชิก", value: "MEMBER" },
+	]
 
 	const router = useRouter()
 
-	const onSelect = useCallback((option: { name: string; value: string }) => {
-		refetch()
-		setSelect(option.value)
+	const onSelect = useCallback((option) => {
+		refetch({
+			roomsType: option.value,
+		})
 	}, [])
 
 	return (
 		<div className="ralative">
 			<DashboardNavbar />
 
-			<div className="container pt-12 pb-24">
-				<Dropdown
-					className="mt-10"
-					label="ประเภทห้อง"
-					options={[
-						{ name: "ทั้งหมด", value: "ALL" },
-						{ name: "เจ้าของ", value: "OWNER" },
-						{ name: "สมาชิก", value: "MEMBER" },
-					]}
-					onSelect={onSelect}
-					defaultValue={select}
-				/>
+			<div className="container pt-24 pb-24">
+				<Select options={options} onSelect={onSelect} />
+
 				{loading ? (
 					<Loading />
 				) : (
@@ -48,7 +44,9 @@ const Dashobard: FC = () => {
 							render={(e) => (
 								<div
 									onClick={() => router.push(`/room/${e.id}`)}
-									className="item-card text-main-grey"
+									className={`item-card text-main-grey ${
+										e.isOwner ? "border border-main-blue" : ""
+									}`}
 								>
 									<div className="text-main-dark font-bold">{e.title}</div>
 
