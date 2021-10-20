@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useRef, useState } from "react"
+import React, { FC, useEffect, useState } from "react"
 import { getSession, signIn } from "next-auth/client"
 import Link from "next/link"
 import { useRouter } from "next/dist/client/router"
@@ -41,6 +41,7 @@ const SignIn: FC = () => {
 				redirect: false,
 			})
 
+			setLoading(false)
 			if (!res?.ok) {
 				Toast.open({
 					title: "เข้าสู่ระบบไม่สำเร็จ",
