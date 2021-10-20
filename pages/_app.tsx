@@ -12,6 +12,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 			<RecoilRoot>
 				<Head>
 					<title>Sharekan</title>
+					<link rel="manifest" href="/manifest.json"></link>
 					<meta
 						name="viewport"
 						content="initial-scale=1.0, width=device-width"
