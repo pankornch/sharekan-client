@@ -15,6 +15,7 @@ import { useRouter } from "next/dist/client/router"
 import { gql, useMutation, useQuery } from "@apollo/client"
 import dateFormatter from "@/src/utils/dateFormatter"
 import Loading from "@/src/components/Loading"
+import Swal from "sweetalert2"
 
 interface Props {
 	query: {
@@ -49,12 +50,21 @@ const RoomOverview: FC<Props> = (props) => {
 	const router = useRouter()
 
 	const onRemoveRoom = async () => {
-		if (!confirm("ต้องการลบห้องนี้หรือไม่?")) return
+		const result = await Swal.fire({
+			title: "ต้องการจะลบหรือไม่?",
+			confirmButtonText: "ตกลง",
+			showCancelButton: true,
+			cancelButtonText: "ยกเลิก",
+			confirmButtonColor: "#123AAF",
+			icon: "warning",
+		})
+
+		if (!result.isConfirmed) return
 
 		try {
 			await removeRoom({
 				variables: {
-					removeRoomInput: {
+					input: {
 						id: props.query.roomId,
 					},
 				},
