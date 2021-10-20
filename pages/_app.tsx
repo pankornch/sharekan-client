@@ -13,6 +13,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 				<Head>
 					<title>Sharekan</title>
 					<link rel="manifest" href="/manifest.json"></link>
+					<link rel="apple-touch-icon" sizes="180x180" href="icon-192x192.png"></link>
 					<meta
 						name="viewport"
 						content="initial-scale=1.0, width=device-width"
