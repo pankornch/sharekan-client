@@ -1,16 +1,18 @@
 import DashboardNavbar from "@/src/components/DashboardNavbar"
-import React, { FC } from "react"
+import React, { FC, useEffect, useState } from "react"
 import { QRCode } from "react-qr-svg"
 import Copy from "@/src/components/Copy"
 import avatar from "@/src/utils/avatar"
 import Crown from "@/public/crown.svg"
 import Bot from "@/public/bot.svg"
 import User from "@/public/user.svg"
+import Check from "@/public/check.svg"
+import Close from "@/public/close.svg"
 import Section from "@/src/components/Section"
 import auth from "@/src/middlewares/auth"
 import client from "@/src/configs/apollo-client"
 import { IMember } from "@/src/types"
-import { GET_ROOM_OVERVIEW, REMOVE_ROOM } from "@/src/gql"
+import { GET_ROOM_OVERVIEW, REMOVE_ROOM, UPDATE_ROOM_TITLE } from "@/src/gql"
 import { useRouter } from "next/dist/client/router"
 import { gql, useMutation, useQuery } from "@apollo/client"
 import dateFormatter from "@/src/utils/dateFormatter"
@@ -43,9 +45,17 @@ const RoomOverview: FC<Props> = (props) => {
 	}
 
 	const [removeRoom] = useMutation(REMOVE_ROOM)
-	const { data: room, loading } = useQuery(GET_ROOM_OVERVIEW, {
+	const [updateRoom] = useMutation(UPDATE_ROOM_TITLE)
+	const {
+		data: room,
+		loading,
+		refetch: refetchRoom,
+	} = useQuery(GET_ROOM_OVERVIEW, {
 		variables: { roomId: props.query.roomId },
 	})
+
+	const [roomTitle, setRoomTitle] = useState<string>("")
+	const [isEdit, setIsEdit] = useState<boolean>(false)
 
 	const router = useRouter()
 
@@ -73,6 +83,33 @@ const RoomOverview: FC<Props> = (props) => {
 		} catch (error) {}
 	}
 
+	const onEditRoomTitle = () => {
+		updateRoom({
+			variables: {
+				input: {
+					id: props.query.roomId,
+					title: roomTitle,
+				},
+			},
+		})
+		refetchRoom()
+
+		setIsEdit(false)
+	}
+
+	const undoRoomTitle = () => {
+		setRoomTitle(room.room.title)
+	}
+
+	useEffect(() => {
+		if (!roomTitle) return
+		if (roomTitle !== room.room.title) {
+			return setIsEdit(true)
+		}
+
+		setIsEdit(false)
+	}, [roomTitle])
+
 	if (loading) return <Loading />
 
 	return (
@@ -81,12 +118,24 @@ const RoomOverview: FC<Props> = (props) => {
 
 			<div className="container pt-24 pb-9 space-y-7">
 				<Section title="ชื่อห้อง">
-					<input
-						type="text"
-						className="input w-full"
-						defaultValue={room.room.title}
-						readOnly
-					/>
+					<div className="relative">
+						<input
+							type="text"
+							className="input w-full"
+							value={roomTitle || room.room.title}
+							readOnly={!props.isOwner}
+							onChange={(e) => setRoomTitle(e.target.value)}
+						/>
+						{props.isOwner && isEdit && (
+							<div className="absolute top-2 right-3 cursor-pointer flex space-x-3">
+								<Check
+									className="text-main-blue w-6"
+									onClick={onEditRoomTitle}
+								/>
+								<Close className="text-main-red w-6" onClick={undoRoomTitle} />
+							</div>
+						)}
+					</div>
 				</Section>
 
 				<Section title="ไอดีห้อง">

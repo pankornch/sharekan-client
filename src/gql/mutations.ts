@@ -73,3 +73,11 @@ export const REMOVE_MEMBER = gql`
 		removeMember(input: $input)
 	}
 `
+
+export const UPDATE_ROOM_TITLE = gql`
+	mutation ($input: UpdateRoomInput!) {
+		updateRoom(input: $input) {
+			id
+		}
+	}
+`

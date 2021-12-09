@@ -1,5 +1,5 @@
 import DashboardNavbar from "@/src/components/DashboardNavbar"
-import React, { FC, useCallback, useContext, useEffect, useState } from "react"
+import React, { FC, useCallback, useEffect, useRef, useState } from "react"
 import Add from "@/public/add.svg"
 import Remove from "@/public/remove.svg"
 import client from "@/src/configs/apollo-client"
@@ -33,7 +33,6 @@ const AddItem: FC<Props> = (props) => {
 	const [members, setMembers] = useState<IMember[]>([])
 	const [loading, setLoading] = useState<boolean>(true)
 	const [currentMember, setCurrentMember] = useState<IMember>({})
-	const [submitLoading, setSubmitLoading] = useState<boolean>(false)
 
 	const { data: queryRoom, refetch } = useQuery(
 		props.isOwner ? GET_ITEM_BY_ID_BY_OWNER : GET_ITEM_BY_ID,
@@ -44,6 +43,7 @@ const AddItem: FC<Props> = (props) => {
 	const [createAnonymousUser] = useMutation(CREATE_ANONYMOUS_MEMBER)
 
 	const router = useRouter()
+	const sending = useRef<boolean>(false)
 
 	useEffect(() => {
 		if (!queryRoom) return
@@ -67,6 +67,8 @@ const AddItem: FC<Props> = (props) => {
 	}
 
 	const onRemoveItem = async () => {
+		if (sending.current) return
+		sending.current = true
 		const result = await Swal.fire({
 			icon: "warning",
 			title: `ต้องการลบสินค้า ${item.name} หรือไม่?`,
@@ -93,8 +95,9 @@ const AddItem: FC<Props> = (props) => {
 
 	const onSubmit = async (e: React.FocusEvent<HTMLFormElement>) => {
 		e.preventDefault()
-		setSubmitLoading(true)
+		if (sending.current) return
 
+		sending.current = true
 		const result = await Swal.fire({
 			title: "ต้องการแก้ไขรายการหรือไม่ ?",
 			showDenyButton: true,
@@ -121,7 +124,7 @@ const AddItem: FC<Props> = (props) => {
 			})
 			router.back()
 		} catch (error: any) {
-			setSubmitLoading(false)
+			sending.current = false
 		}
 	}
 
@@ -289,7 +292,7 @@ const AddItem: FC<Props> = (props) => {
 						{canEdit() && (
 							<div className="space-y-3">
 								<button
-									disabled={submitLoading}
+									disabled={sending.current}
 									type="submit"
 									className="button text-white bg-main-blue w-full"
 								>

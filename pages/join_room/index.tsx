@@ -41,7 +41,10 @@ export const getServerSideProps = auth(async ({ query, req, res }: any) => {
 		return {
 			props: {},
 		}
-	} catch (error) {
+	} catch (error: any) {
+		if (error.graphQLErrors[0].message === "You are in this room") {
+			return res.writeHead(302, { location: `/room/${id}` })
+		}
 		return {
 			notFound: true,
 		}

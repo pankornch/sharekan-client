@@ -3,23 +3,22 @@ import { CREATE_ROOM } from "@/src/gql"
 import auth from "@/src/middlewares/auth"
 import { useMutation } from "@apollo/client"
 import { useRouter } from "next/dist/client/router"
-import React, { FC, useState } from "react"
-import LoadingSVG from '@/public/loading.svg'
+import React, { FC, useRef, useState } from "react"
+import LoadingSVG from "@/public/loading.svg"
+import { GetServerSideProps } from "next"
 
 const CreateRoom: FC = () => {
 	const router = useRouter()
 	const [title, setTitle] = useState<string>("")
 	const [createRoom] = useMutation(CREATE_ROOM)
-	const [loading, setLoading] = useState<boolean>(false)
-
+	const sending = useRef<boolean>(false)
 	const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
 
-		setLoading(true)
+		sending.current = true
 		const res = await createRoom({ variables: { createRoomInput: { title } } })
 		const { id } = res.data.createRoom
 		router.push(`/room/${id}`)
-		setLoading(false)
 	}
 
 	return (
@@ -38,9 +37,9 @@ const CreateRoom: FC = () => {
 					<button
 						type="submit"
 						className="button bg-main-blue text-white mt-12 w-full"
-						disabled={loading}
+						disabled={sending.current}
 					>
-						{loading && (
+						{sending.current && (
 							<LoadingSVG className="text-gray-500 w-5 h-5 mr-3 animate-spin" />
 						)}
 						สร้างห้อง
@@ -51,7 +50,7 @@ const CreateRoom: FC = () => {
 	)
 }
 
-export const getServerSideProps = auth(async () => {
+export const getServerSideProps = auth(async ({ req }) => {
 	return {
 		props: {},
 	}

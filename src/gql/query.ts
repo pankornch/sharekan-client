@@ -136,6 +136,12 @@ export const GET_MEMBER_BY_ID = gql`
 		room(id: $roomId) {
 			id
 			title
+			owner {
+				email
+				name
+				promptpayNumber
+				promptpayName
+			}
 			member(id: $memberId) {
 				id
 				isAnonymous

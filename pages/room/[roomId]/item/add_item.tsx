@@ -1,5 +1,5 @@
 import DashboardNavbar from "@/src/components/DashboardNavbar"
-import React, { FC, useCallback, useEffect, useState } from "react"
+import React, { FC, useCallback, useEffect, useRef, useState } from "react"
 import Add from "@/public/add.svg"
 import Remove from "@/public/remove.svg"
 import { useRouter } from "next/dist/client/router"
@@ -46,6 +46,7 @@ const AddItem: FC<Props> = (props) => {
 	)
 	const [addItem] = useMutation(ADD_ITEM)
 	const [removeMember] = useMutation(REMOVE_MEMBER)
+	const sending = useRef<boolean>(false)
 
 	useEffect(() => {
 		if (!room) return
@@ -79,7 +80,9 @@ const AddItem: FC<Props> = (props) => {
 
 	const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
-
+		if (sending.current) return
+		
+		sending.current = true
 		await addItem({
 			variables: {
 				input: {
@@ -96,6 +99,7 @@ const AddItem: FC<Props> = (props) => {
 			title: "เพิ่มรายการสำเร็จ",
 			type: "SUCCESS",
 		})
+
 		router.back()
 	}
 
@@ -263,6 +267,7 @@ const AddItem: FC<Props> = (props) => {
 							<button
 								type="submit"
 								className="button text-white bg-main-blue w-full"
+								disabled={sending.current}
 							>
 								เพิ่มสินค้าในตระกร้า
 							</button>

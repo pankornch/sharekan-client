@@ -9,6 +9,8 @@ import { IItem } from "@/src/types"
 import avatar from "@/src/utils/avatar"
 import { gql, useQuery } from "@apollo/client"
 import { useRouter } from "next/dist/client/router"
+import { QRCode } from "react-qr-svg"
+import generatePayload from "promptpay-qr"
 import React, { FC } from "react"
 
 interface Props {
@@ -37,6 +39,13 @@ const ViewMember: FC<Props> = (props) => {
 
 	const goToItem = (item: IItem) => {
 		router.push(`/room/${data.room.id}/item/${item.id}`)
+	}
+
+	const getPromptpayText = () => {
+		if (loading) return
+		return generatePayload(data.room.owner.promptpayNumber, {
+			amount: data.room.member.cart.total,
+		})
 	}
 
 	if (loading) return <Loading />
@@ -68,6 +77,28 @@ const ViewMember: FC<Props> = (props) => {
 					</div>
 					{data.room.member.isAnonymous && <Copy content={getInviteUri()} />}
 				</div>
+
+				{data.room.owner.promptpayNumber && data.room.owner.promptpayName ? (
+					<>
+						<div className="flex justify-center">
+							<QRCode value={getPromptpayText()} className="w-56" />
+						</div>
+
+						<div className="space-y-3">
+							<Section title="พร้อมเพย์">
+								<div className="flex justify-between items-center">
+									<div className="flex flex-col space-y-1 text-main-grey">
+										<span>{data.room.owner.promptpayName}</span>
+										<span>{data.room.owner.promptpayNumber}</span>
+									</div>
+									<Copy content={data.room.owner.promptpayNumber} />
+								</div>
+							</Section>
+						</div>
+					</>
+				) : (
+					<div className="text-xl text-main-grey">ไม่พบข้อมูลพร้อมเพย์</div>
+				)}
 
 				<div className="flex flex-col">
 					<Section title="สินค้า" className="space-y-3">
