@@ -12,6 +12,7 @@ import { IMember, IRoom } from "@/src/types"
 import Loading from "@/src/components/Loading"
 import ListView from "@/src/components/ListView"
 import BotSVG from "@/public/bot.svg"
+import CalculatorSVG from "@/public/calculator.svg"
 import {
 	GET_ITEMS_BY_OWNER,
 	GET_ME_IN_ROOM,
@@ -22,6 +23,7 @@ import {
 import Toast from "@/src/components/Toast"
 import Select from "@/src/components/Select"
 import Fuse from "fuse.js"
+import Cheaper from "@/src/components/Cheaper"
 
 interface Props {
 	room: IRoom
@@ -45,6 +47,7 @@ const RoomById: FC<Props> = (props) => {
 	const router = useRouter()
 
 	const [selectType, setSelectType] = useState<string>("")
+	const [openCheaper, setOpenCheaper] = useState<boolean>(false)
 
 	const options = [
 		{ label: "ของตนเอง", value: "own" },
@@ -123,6 +126,12 @@ const RoomById: FC<Props> = (props) => {
 			<div className="fixed bottom-28 right-3 space-y-5">
 				<div
 					className="bg-blue-200 rounded-full p-3 cursor-pointer"
+					onClick={() => setOpenCheaper((prev) => !prev)}
+				>
+					<CalculatorSVG className="h-9 fill-color text-main-blue" />
+				</div>
+				<div
+					className="bg-blue-200 rounded-full p-3 cursor-pointer"
 					onClick={() => router.push(`/room/${router.query.roomId}/overview`)}
 				>
 					<Info className="w-9 fill-color text-main-blue" />
@@ -145,6 +154,8 @@ const RoomById: FC<Props> = (props) => {
 					<a className="button w-full bg-main-blue text-white">เพิ่มสินค้า</a>
 				</Link>
 			</div>
+
+			<Cheaper isOpen={openCheaper} onClose={() => setOpenCheaper(false)} />
 		</div>
 	)
 }
