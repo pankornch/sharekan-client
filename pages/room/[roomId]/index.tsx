@@ -21,12 +21,24 @@ import {
 } from "@/src/gql"
 import Toast from "@/src/components/Toast"
 import Select from "@/src/components/Select"
+import Fuse from "fuse.js"
 
 interface Props {
 	room: IRoom
 	query: {
 		roomId: string
 	}
+}
+
+const handleSearch = (data: any[], text: string) => {
+	const options = {
+		keys: ["name"],
+	}
+
+	const fuse = new Fuse(data, options)
+
+	const result = fuse.search(text)
+	return result.map((e) => e.item)
 }
 
 const RoomById: FC<Props> = (props) => {
@@ -146,17 +158,35 @@ const Items: FC<{ roomId: string; refresh: number }> = ({
 		variables: { roomId, order: "DESC" },
 	})
 
+	const [searchText, setSearchText] = useState<string>("")
+	const [searchResult, setSearchResult] = useState<any[] | null>(null)
+
 	useEffect(() => {
 		if (!refresh) return
 		refetch()
 	}, [refresh, refetch])
 
+	useEffect(() => {
+		if (!searchText) {
+			setSearchResult(null)
+			return
+		}
+		const result = handleSearch(data?.room?.items, searchText)
+		setSearchResult(result)
+	}, [searchText, data])
+
 	if (loading) return <Loading />
 
 	return (
 		<>
+			<input
+				className="input mt-3 w-full"
+				placeholder="Search item name"
+				value={searchText}
+				onChange={(e) => setSearchText(e.target.value)}
+			/>
 			<ListView
-				data={data.room.items}
+				data={searchResult || data.room.items}
 				render={(e) => (
 					<div
 						onClick={() => router.push(`/room/${roomId}/item/${e.id}`)}
@@ -198,12 +228,31 @@ const ItemsOwner: FC<{ roomId: string }> = ({ roomId }) => {
 		variables: { roomId, order: "DESC" },
 	})
 
+	const [searchText, setSearchText] = useState<string>("")
+	const [searchResult, setSearchResult] = useState<any[] | null>(null)
+
+	useEffect(() => {
+		if (!searchText) {
+			setSearchResult(null)
+			return
+		}
+		const result = handleSearch(data?.room?.me?.items, searchText)
+
+		setSearchResult(result)
+	}, [searchText, data])
+
 	if (loading) return <Loading />
 
 	return (
 		<>
+			<input
+				className="input mt-3 w-full"
+				placeholder="Search item name"
+				value={searchText}
+				onChange={(e) => setSearchText(e.target.value)}
+			/>
 			<ListView
-				data={data.room.me.items}
+				data={searchResult || data.room.me.items}
 				render={(e) => (
 					<div
 						onClick={() => router.push(`/room/${roomId}/item/${e.id}`)}

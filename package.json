@@ -12,6 +12,7 @@
     "@apollo/client": "^3.4.11",
     "@netlify/plugin-nextjs": "^3.9.0",
     "@svgr/webpack": "^5.5.0",
+    "fuse.js": "^6.4.6",
     "graphql": "^15.5.3",
     "i": "^0.3.6",
     "next": "11.1.2",
