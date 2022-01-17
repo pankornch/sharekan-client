@@ -1,16 +1,23 @@
-import { GetServerSideProps, GetServerSidePropsContext } from "next"
+import {
+	GetServerSideProps,
+	GetServerSidePropsContext,
+	GetServerSidePropsResult,
+} from "next"
 import { getSession } from "next-auth/client"
 
 const auth = (
-	handler: (context: GetServerSidePropsContext) => any
+	handler: (context: GetServerSidePropsContext) => Promise<GetServerSidePropsResult<any>>
 ): GetServerSideProps => {
-	return async (context: GetServerSidePropsContext) => {
+	return async (context) => {
 		const session = await getSession({ req: context.req })
 		if (!session?.token) {
-			context.res.writeHead(302, {
-				Location: "/sign_in",
-			})
-			context.res.end()
+			return {
+				redirect: {
+					destination: "/sign_in",
+					permanent: true,
+				},
+				props: {}
+			}
 		}
 
 		context.locale = JSON.stringify(session)

@@ -71,7 +71,7 @@ const ViewMember: FC<Props> = (props) => {
 								{data.room.member.nickname}
 							</span>
 							<span className="text-sm text-main-grey">
-								{data.room.member.user.email}
+								{data.room.member.user?.email}
 							</span>
 						</div>
 					</div>

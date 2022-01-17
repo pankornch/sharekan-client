@@ -81,3 +81,11 @@ export const UPDATE_ROOM_TITLE = gql`
 		}
 	}
 `
+
+export const JOIN_ROOM = gql`
+	mutation ($input: JoinRoomInput!) {
+		joinRoom(input: $input) {
+			id
+		}
+	}
+`

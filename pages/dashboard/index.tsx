@@ -7,8 +7,9 @@ import { useRouter } from "next/dist/client/router"
 import Loading from "@/src/components/Loading"
 import ListView from "@/src/components/ListView"
 import { useQuery } from "@apollo/client"
-import { GET_ROOMS } from "@/src/gql"
+import { GET_ROOMS, JOIN_ROOM } from "@/src/gql"
 import Select from "@/src/components/Select"
+import client from "@/src/configs/apollo-client"
 
 const Dashobard: FC = () => {
 	const { data, refetch, loading } = useQuery(GET_ROOMS, {
@@ -82,7 +83,43 @@ const Dashobard: FC = () => {
 	)
 }
 
-export const getServerSideProps = auth(async ({ req }: any) => {
+export const getServerSideProps = auth(async ({ req, res }) => {
+	const { join_room_id, member_id } = req.cookies
+
+	if (join_room_id) {
+		try {
+			client.mutate({
+				mutation: JOIN_ROOM,
+				variables: {
+					input: {
+						id: join_room_id,
+						memberId: member_id,
+					},
+				},
+				context: { req },
+			})
+			res.setHeader("set-cookie", ["join_room_id=", "member_id="])
+
+			return {
+				redirect: {
+					destination: `/room/${join_room_id}`,
+				},
+				props: {},
+			}
+		} catch (error: any) {
+			res.setHeader("set-cookie", ["join_room_id=", "member_id="])
+			if (error.graphQLErrors[0].message === "You are in this room") {
+
+				return {
+					redirect: {
+						destination: `/room/${join_room_id}`,
+					},
+					props: {},
+				}
+			}
+		}
+	}
+	res.setHeader("set-cookie", ["join_room_id=", "member_id="])
 	return {
 		props: {},
 	}

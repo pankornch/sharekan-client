@@ -1,6 +1,8 @@
 import client from "@/src/configs/apollo-client"
-import auth from "@/src/middlewares/auth"
+import { JOIN_ROOM } from "@/src/gql"
 import gql from "graphql-tag"
+import { GetServerSideProps } from "next"
+import { getSession } from "next-auth/client"
 import React, { FC } from "react"
 
 const JoinRoom: FC = () => {
@@ -9,8 +11,24 @@ const JoinRoom: FC = () => {
 
 export default JoinRoom
 
-export const getServerSideProps = auth(async ({ query, req, res }: any) => {
+export const getServerSideProps: GetServerSideProps = async ({
+	req,
+	query,
+	res,
+}) => {
 	const { id, memberId } = query
+	
+	const session = await getSession({ req })
+
+	if (!session) {
+		res.setHeader("set-cookie", [`join_room_id=${id}`, `member_id=${memberId}`])
+		return {
+			redirect: {
+				destination: "/sign_in",
+				permanent: true,
+			},
+		}
+	}
 
 	if (!id) {
 		return {
@@ -20,33 +38,33 @@ export const getServerSideProps = auth(async ({ query, req, res }: any) => {
 
 	try {
 		await client.mutate({
-			mutation: gql`
-				mutation ($joinRoomInput: JoinRoomInput!) {
-					joinRoom(input: $joinRoomInput) {
-						id
-					}
-				}
-			`,
+			mutation: JOIN_ROOM,
 			variables: {
-				joinRoomInput: {
+				input: {
 					id,
 					memberId,
 				},
 			},
 			context: { req },
 		})
-		res.writeHead(302, { location: `/room/${id}` })
-		res.end()
 
 		return {
+			redirect: {
+				destination: `/room/${id}`,
+			},
 			props: {},
 		}
 	} catch (error: any) {
 		if (error.graphQLErrors[0].message === "You are in this room") {
-			return res.writeHead(302, { location: `/room/${id}` })
+			return {
+				redirect: {
+					destination: `/room/${id}`,
+				},
+				props: {},
+			}
 		}
 		return {
 			notFound: true,
 		}
 	}
-})
+}

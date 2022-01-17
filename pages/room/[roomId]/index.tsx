@@ -329,7 +329,7 @@ const Member: FC<{ roomId: string }> = (props) => {
 	)
 }
 
-export const getServerSideProps = auth(async ({ query, res, req }: any) => {
+export const getServerSideProps = auth(async ({ query, req }) => {
 	const { roomId } = query
 
 	try {
@@ -354,6 +354,7 @@ export const getServerSideProps = auth(async ({ query, res, req }: any) => {
 	} catch (error) {
 		return {
 			notFound: true,
+			props: {}
 		}
 	}
 })

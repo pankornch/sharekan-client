@@ -187,14 +187,14 @@ const AddItem: FC<Props> = (props) => {
 									onClick={increment}
 									className="shadow flex items-center justify-center bg-white rounded-full w-10 h-10 cursor-pointer"
 								>
-									<Add />
+									<Add className="w-6 text-black" />
 								</div>
 								<span>{item.quantity}</span>
 								<div
 									onClick={decrement}
 									className="shadow flex items-center justify-center bg-white rounded-full w-10 h-10 cursor-pointer"
 								>
-									<Remove />
+									<Remove className="w-6 text-black" />
 								</div>
 							</div>
 						</div>
