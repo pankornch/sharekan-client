@@ -84,7 +84,7 @@ const ChangePassword: FC = () => {
 	)
 }
 
-export const getServerSideProps = auth(() => {
+export const getServerSideProps = auth(async () => {
 	return {
 		props: {},
 	}

@@ -7,7 +7,7 @@ const Room: FC = () => {
 
 export default Room
 
-export const getServerSideProps = auth(({ res }: any) => {
+export const getServerSideProps = auth(async ({ res }: any) => {
 	return {
 		notFound: true,
 	}
